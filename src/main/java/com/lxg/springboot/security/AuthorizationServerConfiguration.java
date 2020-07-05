@@ -14,6 +14,8 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.provider.approval.UserApprovalHandler;
 import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
+import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -30,9 +32,6 @@ import java.util.Arrays;
 @Configuration
 @EnableAuthorizationServer
 public class AuthorizationServerConfiguration extends AuthorizationServerConfigurerAdapter {
-
-	@Autowired
-	private TokenStore tokenStore;
 
 	@Autowired
 	private UserApprovalHandler userApprovalHandler;
@@ -55,11 +54,25 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 			.redirectUris("http://example.com");//刷新token有效期为600秒
 	}
 
+    @Bean
+    public TokenStore tokenStore(){
+        return new JwtTokenStore(accessTokenConverter());
+    }
+
+    @Bean
+    public JwtAccessTokenConverter accessTokenConverter() {
+        final JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
+        converter.setSigningKey("123");
+        return converter;
+    }
+
 	@Override
 	public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-		endpoints.tokenStore(tokenStore)
+		endpoints.tokenStore(tokenStore())
 				.userApprovalHandler(userApprovalHandler)
 				.authenticationManager(authenticationManager)
+                // token生成方式
+                .accessTokenConverter(accessTokenConverter())
 				//接收GET和POST
 				.allowedTokenEndpointRequestMethods(HttpMethod.GET, HttpMethod.POST);;
 	}
